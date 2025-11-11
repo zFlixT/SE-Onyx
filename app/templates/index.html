@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SE Onyx — Asistente de Compras</title>
+  
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Estilos del sistema -->
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+  <!-- ===== NAVBAR SUPERIOR ===== -->
+  <nav class="navbar navbar-expand-lg shadow-sm">
+    <div class="container-fluid px-4">
+      <a class="navbar-brand">💻 SE Onyx — Asistente de Compras</a>
+      <div class="d-flex align-items-center">
+        <span id="userWelcome" class="user-info me-3"></span>
+        <div class="dropdown">
+          <button class="btn btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">Menú</button>
+          <ul class="dropdown-menu dropdown-menu-end">
+            <li><a class="dropdown-item" href="#" id="verFavoritos">⭐ Mis Favoritos</a></li>
+            <li><hr class="dropdown-divider"></li>
+            <li><a class="dropdown-item text-danger" href="#" id="logoutBtn">Cerrar sesión</a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ===== CONTENIDO PRINCIPAL ===== -->
+  <main class="container my-4">
+    <!-- ===== FORMULARIO ===== -->
+    <div class="card p-4 mb-4">
+      <h4 class="text-primary fw-bold mb-3">Encuentra tu equipo ideal ⚙️</h4>
+      <form id="consultaForm">
+        <div class="row g-3">
+          <div class="col-12 col-md-6 col-lg-3">
+            <label class="form-label">Uso</label>
+            <input type="text" id="uso" class="form-control" placeholder="Describe el uso (ej: gaming, oficina...)">
+          </div>
+          <div class="col-12 col-md-6 col-lg-3">
+            <label class="form-label">Gama:</label>
+              <select id="gama" class="form-select">
+                <option value="" disabled selected>Selecciona una gama</option>
+                <option value="baja">Baja</option>
+                <option value="media">Media</option>
+                <option value="alta">Alta</option>
+              </select>
+          </div>
+          <div class="col-12 col-md-6 col-lg-3">
+            <label class="form-label">Presupuesto (USD)</label>
+            <input type="number" id="presupuesto" class="form-control" placeholder="Ej: 1500">
+          </div>
+          <div class="col-12 col-md-6 col-lg-3">
+            <label class="form-label">Marca preferida</label>
+            <input type="text" id="marca" class="form-control" placeholder="Ej: Asus, Dell...">
+          </div>
+        </div>
+        <div class="text-center mt-4">
+          <button type="submit" class="btn btn-primary px-4">🔍 Buscar</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- ===== RESULTADOS ===== -->
+    <div id="results" class="mt-3"></div>
+
+    <!-- ===== FAVORITOS ===== -->
+    <section id="favoritesSection" class="mt-5" style="display:none;">
+      <h4 class="text-primary mb-4">⭐ Mis Productos Favoritos</h4>
+      <div id="favoritesContainer" class="row g-4"></div>
+    </section>
+  </main>
+
+  <!-- ===== FOOTER ===== -->
+  <footer class="text-center py-3 text-secondary small">
+    <p class="mb-0">SE Onyx v1.0 — Sistema Experto Asistente de Compras</p>
+  </footer>
+
+  <!-- Bootstrap JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+  <!-- ===== SCRIPT PRINCIPAL ===== -->
+  <script>
+    // === VALIDAR SESIÓN ===
+    const userId = localStorage.getItem("user_id");
+    const userName = localStorage.getItem("user_name");
+    const userEmail = localStorage.getItem("user_email");
+
+    if (!userId) {
+      window.location.href = "/";
+    } else {
+      document.getElementById("userWelcome").textContent =
+        `👋 Bienvenido, ${userName || "usuario"}`;
+    }
+
+    // === LOGOUT ===
+    document.getElementById("logoutBtn").addEventListener("click", () => {
+      localStorage.clear();
+      window.location.href = "/";
+    });
+
+    // === VER FAVORITOS ===
+    document.getElementById("verFavoritos").addEventListener("click", async () => {
+      const section = document.getElementById("favoritesSection");
+      const container = document.getElementById("favoritesContainer");
+      section.style.display = "block";
+      container.innerHTML = "<p class='text-muted'>Cargando favoritos...</p>";
+
+      try {
+        const res = await fetch(`/users/${userId}/favorites`);
+        const data = await res.json();
+
+        if (data.ok && data.favorites.length > 0) {
+          container.innerHTML = "";
+          data.favorites.forEach(prod => {
+            container.innerHTML += `
+              <div class="col-12 col-md-6 col-lg-4">
+                <div class="card fav-card p-3 h-100">
+                  <h5>${prod.brand || "Marca N/D"} ${prod.name || ""}</h5>
+                  <p class="mb-1"><strong>Procesador:</strong> ${prod.cpu || "N/D"}</p>
+                  <p class="mb-1"><strong>Tarjeta gráfica:</strong> ${prod.gpu || "N/D"}</p>
+                  <p class="mb-1"><strong>RAM:</strong> ${prod.ram || "N/D"} | <strong>Almacenamiento:</strong> ${prod.storage || "N/D"}</p>
+                  <p class="mb-1"><strong>SO:</strong> ${prod.os || "N/D"}</p>
+                  <p class="fw-bold text-primary mt-2">$${parseFloat(prod.price || prod.precio || 0).toFixed(2)}</p>
+                  <div class="d-flex justify-content-end mt-auto">
+                    <button class="btn btn-outline-danger btn-sm" onclick="removeFavorite('${prod.id}')">🗑️ Eliminar</button>
+                  </div>
+                </div>
+              </div>
+            `;
+          });
+        } else {
+          container.innerHTML = "<p class='text-muted'>No tienes productos favoritos aún.</p>";
+        }
+      } catch {
+        container.innerHTML = "<p class='text-danger'>Error al cargar los favoritos.</p>";
+      }
+    });
+
+    // === ELIMINAR FAVORITO ===
+    async function removeFavorite(id) {
+      if (!confirm("¿Eliminar este producto de tus favoritos?")) return;
+      const res = await fetch(`/users/${userId}/favorites/${id}`, { method: "DELETE" });
+      if (res.ok) {
+        alert("Producto eliminado de favoritos.");
+        document.getElementById("verFavoritos").click(); // recargar lista
+      }
+    }
+  </script>
+
+  <!-- Script principal del sistema -->
+  <script src="/static/js/script.js?v=2.0"></script>
+</body>
+</html>
