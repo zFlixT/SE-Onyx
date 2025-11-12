@@ -191,4 +191,4 @@ El CSS personalizado se encuentra en **`static/style.css`** y adapta el diseño 
 ## 🧩 Licencia
 
 Proyecto académico — libre de uso y modificación con fines educativos.  
-© 2025 — *SE Onyx v1. — Sistema Experto Asistente de Compras*.
+© 2025 — *SE Onyx v1.0 — Sistema Experto Asistente de Compras*.
